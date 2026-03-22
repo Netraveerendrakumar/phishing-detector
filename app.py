@@ -1,7 +1,7 @@
 import pickle
 import numpy as np
 import re
-import requests
+import os
 from flask import Flask, render_template, request
 from urllib.parse import urlparse
 from report_logger import init_db, log_report, get_all_reports, get_report_count
@@ -10,10 +10,14 @@ from email_alert import send_user_warning, send_admin_report
 app = Flask(__name__)
 
 # Load ML model and feature columns
-with open('model/phishing_model.pkl', 'rb') as f:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(BASE_DIR, 'model', 'phishing_model.pkl')
+features_path = os.path.join(BASE_DIR, 'model', 'feature_columns.pkl')
+
+with open(model_path, 'rb') as f:
     model = pickle.load(f)
 
-with open('model/feature_columns.pkl', 'rb') as f:
+with open(features_path, 'rb') as f:
     feature_columns = pickle.load(f)
 
 # Initialize database
@@ -21,21 +25,17 @@ init_db()
 
 
 def extract_features_from_url(url):
-    """
-    Extract the 30 features matching our dataset columns from a raw URL.
-    Returns a list of 1, 0, or -1 values matching the trained model.
-    """
     features = {}
     parsed = urlparse(url)
     domain = parsed.netloc.lower()
     path = parsed.path.lower()
     full = url.lower()
 
-    # UsingIP — is an IP address used instead of domain name
+    # UsingIP
     ip_pattern = re.compile(r'(\d{1,3}\.){3}\d{1,3}')
     features['UsingIP'] = 1 if ip_pattern.search(domain) else -1
 
-    # LongURL — URL length
+    # LongURL
     if len(url) < 54:
         features['LongURL'] = -1
     elif len(url) <= 75:
@@ -43,21 +43,21 @@ def extract_features_from_url(url):
     else:
         features['LongURL'] = 1
 
-    # ShortURL — uses URL shortening service
+    # ShortURL
     shorteners = ['bit.ly', 'tinyurl', 'goo.gl', 't.co',
                   'ow.ly', 'is.gd', 'buff.ly', 'adf.ly']
     features['ShortURL'] = 1 if any(s in full for s in shorteners) else -1
 
-    # Symbol@ — has @ symbol in URL
+    # Symbol@
     features['Symbol@'] = 1 if '@' in url else -1
 
-    # Redirecting// — has // redirection in path
+    # Redirecting//
     features['Redirecting//'] = 1 if '//' in parsed.path else -1
 
-    # PrefixSuffix- — hyphen in domain
+    # PrefixSuffix-
     features['PrefixSuffix-'] = 1 if '-' in domain else -1
 
-    # SubDomains — number of dots in domain
+    # SubDomains
     dot_count = domain.count('.')
     if dot_count == 1:
         features['SubDomains'] = -1
@@ -66,78 +66,77 @@ def extract_features_from_url(url):
     else:
         features['SubDomains'] = 1
 
-    # HTTPS — uses HTTPS
+    # HTTPS
     features['HTTPS'] = -1 if url.startswith('https') else 1
 
-    # DomainRegLen — domain length as proxy for registration length
+    # DomainRegLen
     features['DomainRegLen'] = -1 if len(domain) > 0 else 1
 
-    # Favicon — assume legitimate (hard to check without loading page)
+    # Favicon
     features['Favicon'] = -1
 
-    # NonStdPort — uses non-standard port
+    # NonStdPort
     features['NonStdPort'] = 1 if parsed.port and parsed.port not in [80, 443] else -1
 
-    # HTTPSDomainURL — HTTPS in domain name (phishing trick)
+    # HTTPSDomainURL
     features['HTTPSDomainURL'] = 1 if 'https' in domain else -1
 
-    # RequestURL — assume mostly legitimate
+    # RequestURL
     features['RequestURL'] = -1
 
-    # AnchorURL — assume moderate
+    # AnchorURL
     features['AnchorURL'] = 0
 
-    # LinksInScriptTags — assume legitimate
+    # LinksInScriptTags
     features['LinksInScriptTags'] = -1
 
-    # ServerFormHandler — assume legitimate
+    # ServerFormHandler
     features['ServerFormHandler'] = -1
 
-    # InfoEmail — email address in URL
+    # InfoEmail
     features['InfoEmail'] = 1 if 'mailto:' in full else -1
 
-    # AbnormalURL — domain not in URL (basic check)
+    # AbnormalURL
     features['AbnormalURL'] = -1 if domain in full else 1
 
-    # WebsiteForwarding — assume low redirects
+    # WebsiteForwarding
     features['WebsiteForwarding'] = -1
 
-    # StatusBarCust — assume legitimate
+    # StatusBarCust
     features['StatusBarCust'] = -1
 
-    # DisableRightClick — assume legitimate
+    # DisableRightClick
     features['DisableRightClick'] = -1
 
-    # UsingPopupWindow — assume legitimate
+    # UsingPopupWindow
     features['UsingPopupWindow'] = -1
 
-    # IframeRedirection — assume legitimate
+    # IframeRedirection
     features['IframeRedirection'] = -1
 
-    # AgeofDomain — assume older domain
+    # AgeofDomain
     features['AgeofDomain'] = -1
 
-    # DNSRecording — assume has DNS record
+    # DNSRecording
     features['DNSRecording'] = -1
 
-    # WebsiteTraffic — assume moderate
+    # WebsiteTraffic
     features['WebsiteTraffic'] = 0
 
-    # PageRank — assume has rank
+    # PageRank
     features['PageRank'] = -1
 
-    # GoogleIndex — assume indexed
+    # GoogleIndex
     features['GoogleIndex'] = -1
 
-    # LinksPointingToPage — assume some links
+    # LinksPointingToPage
     features['LinksPointingToPage'] = 0
 
-    # StatsReport — check suspicious keywords
+    # StatsReport
     suspicious = ['login', 'verify', 'secure', 'account', 'update',
                   'banking', 'confirm', 'paypal', 'signin', 'password']
     features['StatsReport'] = 1 if any(w in full for w in suspicious) else -1
 
-    # Return in exact column order the model was trained on
     return [features[col] for col in feature_columns]
 
 
@@ -165,7 +164,7 @@ def check_url():
 
     is_phishing = prediction == 1
 
-    # Build readable feature breakdown for UI
+    # Build feature display
     feature_display = dict(zip(feature_columns, feature_list[0]))
 
     if is_phishing:
