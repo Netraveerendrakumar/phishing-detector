@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="logo">🛡️</div>
+            <h1>Phishing Detector</h1>
+            <p class="subtitle">Check if a URL is safe or a phishing attempt</p>
+
+            {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+
+            <form action="/check" method="POST">
+                <div class="input-group">
+                    <label>Enter URL to check</label>
+                    <input type="text" name="url"
+                           placeholder="https://example.com"
+                           required />
+                </div>
+                <div class="input-group">
+                    <label>Your Email <span class="optional">(optional — get warned by email)</span></label>
+                    <input type="email" name="email"
+                           placeholder="you@example.com" />
+                </div>
+                <button type="submit" class="btn-check">
+                    🔍 Check URL
+                </button>
+            </form>
+
+            <div class="admin-link">
+                <a href="/admin">Admin Dashboard →</a>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

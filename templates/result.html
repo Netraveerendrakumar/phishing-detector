@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result - Phishing Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .feature-label {
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+        .feature-value {
+            font-weight: bold;
+            padding: 2px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .val-phishing { background: #450a0a; color: #f87171; }
+        .val-safe     { background: #052e16; color: #4ade80; }
+        .val-neutral  { background: #1e293b; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="logo">🛡️</div>
+
+            {% if is_phishing %}
+            <div class="result-box danger">
+                <h2>⚠️ Phishing Detected!</h2>
+                <p class="url-display">{{ url }}</p>
+                <div class="confidence-bar">
+                    <div class="bar-fill danger-fill" style="width: {{ confidence }}%"></div>
+                </div>
+                <p class="confidence-text">{{ confidence }}% phishing probability</p>
+                <p>This URL looks dangerous. Do <strong>NOT</strong> visit it.</p>
+            </div>
+            {% else %}
+            <div class="result-box safe">
+                <h2>✅ URL Looks Safe</h2>
+                <p class="url-display">{{ url }}</p>
+                <div class="confidence-bar">
+                    <div class="bar-fill safe-fill" style="width: {{ 100 - confidence }}%"></div>
+                </div>
+                <p class="confidence-text">{{ 100 - confidence }}% safe probability</p>
+                <p>No phishing signals detected.</p>
+            </div>
+            {% endif %}
+
+            <div class="features-box">
+                <h3>🔬 URL Analysis Breakdown</h3>
+                <table class="features-table">
+                    <tr>
+                        <th>Feature</th>
+                        <th>Value</th>
+                        <th>Meaning</th>
+                    </tr>
+                    {% for key, value in features.items() %}
+                    <tr>
+                        <td class="feature-label">
+                            {{ key.replace('_', ' ')
+                                  .replace('//', ' //')
+                                  .replace('@', ' @')
+                                  .replace('-', ' -')
+                                  .title() }}
+                        </td>
+                        <td>
+                            {% if value == 1 %}
+                                <span class="feature-value val-phishing">⚠ Suspicious</span>
+                            {% elif value == -1 %}
+                                <span class="feature-value val-safe">✓ Safe</span>
+                            {% else %}
+                                <span class="feature-value val-neutral">~ Neutral</span>
+                            {% endif %}
+                        </td>
+                        <td class="feature-label">
+                            {% if key == 'UsingIP' %}
+                                IP used instead of domain name
+                            {% elif key == 'LongURL' %}
+                                URL length indicator
+                            {% elif key == 'ShortURL' %}
+                                URL shortening service used
+                            {% elif key == 'Symbol@' %}
+                                @ symbol found in URL
+                            {% elif key == 'Redirecting//' %}
+                                Suspicious redirect detected
+                            {% elif key == 'PrefixSuffix-' %}
+                                Hyphen in domain name
+                            {% elif key == 'SubDomains' %}
+                                Number of subdomains
+                            {% elif key == 'HTTPS' %}
+                                Secure HTTPS connection
+                            {% elif key == 'DomainRegLen' %}
+                                Domain registration length
+                            {% elif key == 'Favicon' %}
+                                Favicon loaded from external source
+                            {% elif key == 'NonStdPort' %}
+                                Non-standard port used
+                            {% elif key == 'HTTPSDomainURL' %}
+                                HTTPS token in domain name
+                            {% elif key == 'RequestURL' %}
+                                External objects in page
+                            {% elif key == 'AnchorURL' %}
+                                Suspicious anchor tags
+                            {% elif key == 'LinksInScriptTags' %}
+                                Links found in script tags
+                            {% elif key == 'ServerFormHandler' %}
+                                Suspicious form handler
+                            {% elif key == 'InfoEmail' %}
+                                Email address in URL
+                            {% elif key == 'AbnormalURL' %}
+                                URL does not match domain
+                            {% elif key == 'WebsiteForwarding' %}
+                                Multiple redirects detected
+                            {% elif key == 'StatusBarCust' %}
+                                Status bar customization
+                            {% elif key == 'DisableRightClick' %}
+                                Right click disabled
+                            {% elif key == 'UsingPopupWindow' %}
+                                Popup windows used
+                            {% elif key == 'IframeRedirection' %}
+                                Iframe redirection found
+                            {% elif key == 'AgeofDomain' %}
+                                Domain is newly registered
+                            {% elif key == 'DNSRecording' %}
+                                DNS record exists
+                            {% elif key == 'WebsiteTraffic' %}
+                                Website traffic rank
+                            {% elif key == 'PageRank' %}
+                                Google PageRank score
+                            {% elif key == 'GoogleIndex' %}
+                                Indexed by Google
+                            {% elif key == 'LinksPointingToPage' %}
+                                Backlinks to this page
+                            {% elif key == 'StatsReport' %}
+                                Found in phishing reports
+                            {% else %}
+                                URL feature check
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+            <a href="/" class="btn-back">← Check Another URL</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Phishing Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container wide">
+        <div class="card">
+            <div class="logo">🛡️</div>
+            <h1>Admin Dashboard</h1>
+            <p class="subtitle">All flagged phishing URLs</p>
+
+            <div class="stats-row">
+                <div class="stat-box">
+                    <h2>{{ total }}</h2>
+                    <p>Total Phishing URLs Detected</p>
+                </div>
+                <div class="stat-box">
+                    <a href="/blocklist" class="btn-export">⬇ Export Block List</a>
+                </div>
+            </div>
+
+            {% if reports %}
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>URL</th>
+                        <th>Confidence</th>
+                        <th>Timestamp</th>
+                        <th>Reported By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr>
+                        <td>{{ report[0] }}</td>
+                        <td class="url-cell">{{ report[1] }}</td>
+                        <td>
+                            <span class="badge danger">{{ report[2] | round(1) }}%</span>
+                        </td>
+                        <td>{{ report[3] }}</td>
+                        <td>{{ report[4] if report[4] else 'Anonymous' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No phishing URLs detected yet.</p>
+            </div>
+            {% endif %}
+
+            <a href="/" class="btn-back">← Back to Detector</a>
+        </div>
+    </div>
+</body>
+</html>
